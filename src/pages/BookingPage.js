@@ -4,6 +4,7 @@ import { getRoom, createBooking } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast';
+import { formatINR } from '../utils/currency';
 
 export default function BookingPage() {
   const { id } = useParams();
@@ -150,9 +151,9 @@ export default function BookingPage() {
                       Price Breakdown
                     </div>
                     <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-400">${room.price} × {n} night{n > 1 ? 's' : ''}</span><span className="text-white">${subtotal.toFixed(2)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Taxes & fees (12%)</span><span className="text-white">${tax.toFixed(2)}</span></div>
-                      <div className="flex justify-between pt-2 border-t border-white/10 font-bold"><span className="text-white">Total</span><span className="text-primary-400 text-base">${total.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">{formatINR(room.price)} × {n} night{n > 1 ? 's' : ''}</span><span className="text-white">{formatINR(subtotal)}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-400">Taxes & fees (12%)</span><span className="text-white">{formatINR(tax)}</span></div>
+                      <div className="flex justify-between pt-2 border-t border-white/10 font-bold"><span className="text-white">Total</span><span className="text-primary-400 text-base">{formatINR(total)}</span></div>
                     </div>
                   </div>
                 )}
@@ -238,7 +239,7 @@ export default function BookingPage() {
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Processing Payment...
                     </span>
-                  ) : `Confirm & Pay $${total.toFixed(2)}`}
+                  ) : `Confirm & Pay ${formatINR(total)}`}
                 </button>
               </form>
             )}
@@ -260,9 +261,9 @@ export default function BookingPage() {
                   <div className="flex justify-between"><span className="text-gray-500">Check-out</span><span className="text-white">{form.checkOut}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Nights</span><span className="text-white">{n}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Guests</span><span className="text-white">{form.adults + form.children}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-gray-500">Subtotal</span><span className="text-white">${subtotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Tax (12%)</span><span className="text-white">${tax.toFixed(2)}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-white/5 font-bold text-base"><span className="text-white">Total</span><span className="text-primary-400">${total.toFixed(2)}</span></div>
+                  <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-gray-500">Subtotal</span><span className="text-white">{formatINR(subtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Tax (12%)</span><span className="text-white">{formatINR(tax)}</span></div>
+                  <div className="flex justify-between pt-2 border-t border-white/5 font-bold text-base"><span className="text-white">Total</span><span className="text-primary-400">{formatINR(total)}</span></div>
                 </div>
               )}
               {(n < 1 || !form.checkIn) && (

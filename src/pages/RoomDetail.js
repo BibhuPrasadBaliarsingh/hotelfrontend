@@ -4,6 +4,7 @@ import { getRoom, addReview } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast';
+import { formatINR } from '../utils/currency';
 
 export default function RoomDetail() {
   const { id } = useParams();
@@ -92,7 +93,7 @@ export default function RoomDetail() {
                   )}
                 </div>
                 <div className="price-badge px-5 py-3 rounded-2xl text-right">
-                  <div className="text-3xl font-bold text-primary-300">${room.price}</div>
+                  <div className="text-3xl font-bold text-primary-300">{formatINR(room.price)}</div>
                   <div className="text-gray-500 text-xs">per night</div>
                 </div>
               </div>
@@ -177,7 +178,7 @@ export default function RoomDetail() {
           <div className="lg:col-span-1">
             <div className="card p-6 sticky top-24">
               <div className="text-center mb-6">
-                <div className="text-4xl font-bold text-primary-300">${room.price}</div>
+                <div className="text-4xl font-bold text-primary-300">{formatINR(room.price)}</div>
                 <div className="text-gray-500 text-sm">per night</div>
               </div>
               <div className="space-y-3 mb-6 text-sm">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getMyBookings, cancelBooking } from '../services/api';
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast';
+import { formatINR } from '../utils/currency';
 
 const STATUS_STYLES = {
   confirmed: 'bg-green-500/15 text-green-400 border-green-500/20',
@@ -100,7 +101,7 @@ export default function MyBookings() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-primary-400 font-bold text-lg">${b.totalAmount?.toFixed(2)}</span>
+                        <span className="text-primary-400 font-bold text-lg">{formatINR(b.totalAmount)}</span>
                         <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${b.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-400' : b.paymentStatus === 'refunded' ? 'bg-blue-500/10 text-blue-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
                           {b.paymentStatus}
                         </span>

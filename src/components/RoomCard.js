@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { formatINR } from '../utils/currency';
 
 function StarRating({ rating }) {
   return (
@@ -49,7 +50,7 @@ export default function RoomCard({ room }) {
         {/* Price overlay */}
         <div className="absolute bottom-3 left-3">
           <div className="price-badge px-3 py-1.5 rounded-xl">
-            <span className="text-primary-300 font-bold text-lg">${room.price}</span>
+            <span className="text-primary-300 font-bold text-lg">{formatINR(room.price)}</span>
             <span className="text-gray-400 text-xs">/night</span>
           </div>
         </div>

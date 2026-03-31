@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getMyBookings } from '../services/api';
 import Spinner from '../components/Spinner';
+import { formatINR } from '../utils/currency';
 
 export function BookingConfirm() {
   const { id } = useParams();
@@ -65,7 +66,7 @@ export function BookingConfirm() {
               </div>
               <div className="flex justify-between pt-3 border-t border-white/5 text-base font-bold">
                 <span className="text-white">Total Paid</span>
-                <span className="text-primary-400">${booking.totalAmount?.toFixed(2)}</span>
+                <span className="text-primary-400">{formatINR(booking.totalAmount)}</span>
               </div>
             </div>
 

@@ -3,6 +3,7 @@ import AdminLayout from '../../components/AdminLayout';
 import Spinner from '../../components/Spinner';
 import { getAllBookings, updateBookingStatus, cancelBooking } from '../../services/api';
 import toast from 'react-hot-toast';
+import { formatINR } from '../../utils/currency';
 
 const STATUS_STYLES = {
   confirmed: 'bg-green-500/15 text-green-400 border-green-500/20',
@@ -69,7 +70,7 @@ export default function AdminBookings() {
   const totalRevenue = bookings.filter(b => b.status !== 'cancelled').reduce((s, b) => s + b.totalAmount, 0);
 
   return (
-    <AdminLayout title="Booking Management" subtitle={`${bookings.length} total bookings · $${totalRevenue.toFixed(0)} revenue`}>
+    <AdminLayout title="Booking Management" subtitle={`${bookings.length} total bookings · ${formatINR(totalRevenue)} revenue`}>
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
@@ -141,8 +142,8 @@ export default function AdminBookings() {
                       <p className="text-gray-600 text-xs">{b.totalNights}n</p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-primary-400 font-bold text-sm">${b.totalAmount?.toFixed(2)}</p>
-                      <p className="text-gray-600 text-xs">${b.pricePerNight}/night</p>
+                      <p className="text-primary-400 font-bold text-sm">{formatINR(b.totalAmount)}</p>
+                      <p className="text-gray-600 text-xs">{formatINR(b.pricePerNight)}/night</p>
                     </td>
                     <td className="px-4 py-4">
                       <span className={`text-xs font-medium capitalize ${PAYMENT_STYLES[b.paymentStatus] || 'text-gray-400'}`}>
@@ -206,8 +207,8 @@ export default function AdminBookings() {
                 ['Check-Out', new Date(selectedBooking.checkOut).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
                 ['Nights', selectedBooking.totalNights],
                 ['Guests', `${selectedBooking.guests?.adults} adults, ${selectedBooking.guests?.children || 0} children`],
-                ['Price/Night', `$${selectedBooking.pricePerNight}`],
-                ['Total Amount', `$${selectedBooking.totalAmount?.toFixed(2)}`],
+                ['Price/Night', formatINR(selectedBooking.pricePerNight)],
+                ['Total Amount', formatINR(selectedBooking.totalAmount)],
                 ['Payment', selectedBooking.paymentStatus],
                 ['Booked On', new Date(selectedBooking.createdAt).toLocaleDateString()],
               ].map(([k, v]) => (

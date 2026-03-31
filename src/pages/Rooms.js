@@ -108,11 +108,11 @@ export default function Rooms() {
                 <label className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-3 block">Price per Night</label>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Min $</p>
+                    <p className="text-xs text-gray-600 mb-1">Min ₹</p>
                     <input type="number" placeholder="0" value={filters.minPrice} onChange={e => setFilter('minPrice', e.target.value)} className="input-field text-sm" min="0" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600 mb-1">Max $</p>
+                    <p className="text-xs text-gray-600 mb-1">Max ₹</p>
                     <input type="number" placeholder="999" value={filters.maxPrice} onChange={e => setFilter('maxPrice', e.target.value)} className="input-field text-sm" min="0" />
                   </div>
                 </div>

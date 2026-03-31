@@ -8,6 +8,7 @@ import AdminLayout from '../../components/AdminLayout';
 import Spinner from '../../components/Spinner';
 import { getDashboardStats, getAllBookings } from '../../services/api';
 import toast from 'react-hot-toast';
+import { formatINR } from '../../utils/currency';
 
 const COLORS = ['#d4882a', '#22c55e', '#3b82f6', '#ef4444'];
 
@@ -16,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     return (
       <div className="custom-tooltip">
         <p className="text-gray-400 text-xs mb-1">{label}</p>
-        <p className="text-primary-400 font-bold">${payload[0].value?.toLocaleString()}</p>
+        <p className="text-primary-400 font-bold">{formatINR(payload[0].value)}</p>
       </div>
     );
   }
@@ -91,7 +92,7 @@ export default function AdminDashboard() {
         <StatCard icon="🛏️" label="Total Rooms" value={stats?.totalRooms || 0} sub="In your inventory" color="primary" />
         <StatCard icon="📋" label="Total Bookings" value={stats?.totalBookings || 0} sub={`${stats?.active || 0} active now`} color="blue" />
         <StatCard icon="👥" label="Registered Users" value={stats?.totalUsers || 0} sub="Guest accounts" color="green" />
-        <StatCard icon="💰" label="Total Revenue" value={`$${(stats?.revenue || 0).toLocaleString()}`} sub="All time earnings" color="primary" />
+        <StatCard icon="💰" label="Total Revenue" value={formatINR(stats?.revenue || 0)} sub="All time earnings" color="primary" />
       </div>
 
       {/* Charts Row */}
@@ -103,7 +104,7 @@ export default function AdminDashboard() {
               <h3 className="text-white font-semibold">Revenue Overview</h3>
               <p className="text-gray-500 text-xs mt-0.5">Last 6 months</p>
             </div>
-            <div className="text-primary-400 font-bold">${(stats?.revenue || 0).toLocaleString()}</div>
+            <div className="text-primary-400 font-bold">{formatINR(stats?.revenue || 0)}</div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={stats?.monthly || []}>
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e1e2a" />
               <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+              <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => formatINR(v)} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="revenue" stroke="#d4882a" strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ fill: '#d4882a', r: 4 }} activeDot={{ r: 6, fill: '#e3a341' }} />
             </AreaChart>
@@ -156,7 +157,7 @@ export default function AdminDashboard() {
           <BarChart data={stats?.monthly || []} barSize={32}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e1e2a" vertical={false} />
             <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v}`} />
+            <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => formatINR(v)} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(212,136,42,0.05)' }} />
             <Bar dataKey="revenue" fill="url(#barGrad)" radius={[6, 6, 0, 0]}>
               {(stats?.monthly || []).map((_, i) => (
@@ -172,7 +173,7 @@ export default function AdminDashboard() {
         {[
           { label: 'Active Bookings', value: stats?.active || 0, icon: '✅', color: 'text-green-400' },
           { label: 'Cancelled', value: stats?.cancelled || 0, icon: '❌', color: 'text-red-400' },
-          { label: 'Avg Revenue/Booking', value: stats?.totalBookings ? `$${Math.round(stats.revenue / stats.totalBookings)}` : '$0', icon: '📊', color: 'text-blue-400' },
+          { label: 'Avg Revenue/Booking', value: stats?.totalBookings ? formatINR(Math.round(stats.revenue / stats.totalBookings)) : formatINR(0), icon: '📊', color: 'text-blue-400' },
           { label: 'Occupancy Rate', value: stats?.totalRooms ? `${Math.round((stats.active / stats.totalRooms) * 100)}%` : '0%', icon: '🏨', color: 'text-primary-400' },
         ].map(s => (
           <div key={s.label} className="card p-4 text-center hover:border-primary-800/30 transition-all">
@@ -215,7 +216,7 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-5 py-3 text-gray-300 text-sm">{b.room?.name}</td>
                   <td className="px-5 py-3 text-gray-400 text-sm">{new Date(b.checkIn).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 text-primary-400 font-semibold text-sm">${b.totalAmount?.toFixed(2)}</td>
+                  <td className="px-5 py-3 text-primary-400 font-semibold text-sm">{formatINR(b.totalAmount)}</td>
                   <td className="px-5 py-3">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_STYLES[b.status] || 'bg-gray-500/15 text-gray-400'}`}>
                       {b.status?.charAt(0).toUpperCase() + b.status?.slice(1)}

@@ -3,6 +3,7 @@ import AdminLayout from '../../components/AdminLayout';
 import Spinner from '../../components/Spinner';
 import { getRooms, createRoom, updateRoom, deleteRoom } from '../../services/api';
 import toast from 'react-hot-toast';
+import { formatINR } from '../../utils/currency';
 
 const AMENITIES_LIST = [
   'Free WiFi', 'Air Conditioning', 'Flat-screen TV', '4K Smart TV', 'Mini Fridge',
@@ -105,7 +106,7 @@ function RoomModal({ room, onClose, onSave }) {
           {/* Price, Capacity, Size, Floor */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-gray-400 font-medium mb-1.5 block">Price / Night ($) *</label>
+              <label className="text-xs text-gray-400 font-medium mb-1.5 block">Price / Night (INR) *</label>
               <input type="number" min="0" value={form.price} onChange={e => set('price', e.target.value)}
                 placeholder="149" className={`input-field ${errors.price ? 'border-red-500/50' : ''}`} />
               {errors.price && <p className="text-red-400 text-xs mt-1">{errors.price}</p>}
@@ -304,7 +305,7 @@ export default function AdminRooms() {
                     <td className="px-5 py-4">
                       <span className={`badge border text-xs ${TYPE_STYLES[room.type]}`}>{room.type}</span>
                     </td>
-                    <td className="px-5 py-4 text-primary-400 font-bold">${room.price}<span className="text-gray-600 text-xs font-normal">/night</span></td>
+                    <td className="px-5 py-4 text-primary-400 font-bold">{formatINR(room.price)}<span className="text-gray-600 text-xs font-normal">/night</span></td>
                     <td className="px-5 py-4 text-gray-400 text-sm">{room.capacity} guests</td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
