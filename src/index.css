@@ -61,6 +61,13 @@
   .stat-card {
     @apply card p-6 hover:border-primary-800/50 transition-all duration-300;
   }
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Hero gradient */

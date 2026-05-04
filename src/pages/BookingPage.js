@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getRoom, createBooking } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
+import CameraCapture from '../components/CameraCapture';
 import toast from 'react-hot-toast';
 import { formatINR } from '../utils/currency';
 
@@ -18,6 +19,7 @@ export default function BookingPage() {
     checkIn: '', checkOut: '', adults: 1, children: 0,
     specialRequests: '', paymentMethod: 'card',
     cardNumber: '', cardName: '', cardExpiry: '', cardCVV: '',
+    documentImage: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -45,6 +47,7 @@ export default function BookingPage() {
     if (!form.checkOut) errs.checkOut = 'Select check-out date';
     else if (n < 1) errs.checkOut = 'Check-out must be after check-in';
     if (form.adults < 1) errs.adults = 'At least 1 adult required';
+    if (!form.documentImage) errs.documentImage = 'Upload Aadhaar or PAN card before booking';
     return errs;
   };
 
@@ -75,6 +78,7 @@ export default function BookingPage() {
         roomId: id, checkIn: form.checkIn, checkOut: form.checkOut,
         guests: { adults: form.adults, children: form.children },
         specialRequests: form.specialRequests, paymentMethod: form.paymentMethod,
+        documents: { documentImage: form.documentImage },
       });
       toast.success('Booking confirmed!');
       navigate(`/booking-confirm/${res.data.booking._id}`);
@@ -162,6 +166,22 @@ export default function BookingPage() {
                   <label className="text-xs text-gray-400 font-medium mb-1.5 block">Special Requests <span className="text-gray-600">(optional)</span></label>
                   <textarea value={form.specialRequests} onChange={e => set('specialRequests', e.target.value)}
                     placeholder="Late check-in, extra pillows, dietary requirements..." rows={3} className="input-field resize-none" />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-[0.18em]">Upload Document</p>
+                      <p className="text-gray-500 text-[11px]">Upload Aadhaar or PAN card before booking.</p>
+                    </div>
+                  </div>
+                  <CameraCapture
+                    label="Aadhaar / PAN Card"
+                    value={form.documentImage}
+                    onChange={(value) => set('documentImage', value)}
+                    className="min-h-[170px]"
+                  />
+                  {errors.documentImage && <p className="text-red-400 text-xs mt-1">{errors.documentImage}</p>}
                 </div>
 
                 <button onClick={nextStep} disabled={n < 1} className="btn-primary w-full py-3.5 disabled:opacity-40 disabled:cursor-not-allowed">

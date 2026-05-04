@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AdminLayout from '../../components/AdminLayout';
 import Spinner from '../../components/Spinner';
-import { getAllBookings, updateBookingStatus, cancelBooking } from '../../services/api';
+import API, { getAllBookings, updateBookingStatus, cancelBooking } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatINR } from '../../utils/currency';
+import CreateBookingModal from '../../components/CreateBookingModal';
 
 const STATUS_STYLES = {
   confirmed: 'bg-green-500/15 text-green-400 border-green-500/20',
@@ -18,6 +19,13 @@ const PAYMENT_STYLES = {
   refunded: 'text-blue-400',
 };
 
+const assetUrl = (p) => {
+  if (!p) return '';
+  if (String(p).startsWith('http')) return p;
+  const base = (API.defaults.baseURL || '').replace(/\/api\/?$/i, '');
+  return `${base}${String(p).startsWith('/') ? '' : '/'}${p}`;
+};
+
 export default function AdminBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +33,7 @@ export default function AdminBookings() {
   const [search, setSearch] = useState('');
   const [updating, setUpdating] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     getAllBookings()
@@ -98,6 +107,9 @@ export default function AdminBookings() {
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
           ))}
         </select>
+        <button onClick={() => setCreateOpen(true)} className="btn-primary px-5 py-2.5 text-sm whitespace-nowrap">
+          + Create Booking
+        </button>
       </div>
 
       {loading ? (
@@ -201,6 +213,7 @@ export default function AdminBookings() {
               {[
                 ['Guest', selectedBooking.user?.name],
                 ['Email', selectedBooking.user?.email],
+                ['Phone', selectedBooking.guestInfo?.phone || selectedBooking.user?.phone || '—'],
                 ['Room', selectedBooking.room?.name],
                 ['Room Type', selectedBooking.room?.type],
                 ['Check-In', new Date(selectedBooking.checkIn).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
@@ -221,6 +234,20 @@ export default function AdminBookings() {
                 <div className="bg-white/3 rounded-xl p-3 mt-2">
                   <p className="text-gray-500 text-xs mb-1">Special Requests:</p>
                   <p className="text-gray-300 text-xs">{selectedBooking.specialRequests}</p>
+                </div>
+              )}
+              {selectedBooking.documents && Object.values(selectedBooking.documents).some(Boolean) && (
+                <div className="bg-white/3 rounded-xl p-3 mt-2">
+                  <p className="text-gray-500 text-xs mb-3">Documents:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(selectedBooking.documents).filter(([, v]) => Boolean(v)).map(([k, v]) => (
+                      <a key={k} href={assetUrl(v)} target="_blank" rel="noreferrer"
+                        className="border border-white/10 rounded-xl overflow-hidden hover:border-primary-800/40 transition-colors">
+                        <img src={assetUrl(v)} alt={k} className="w-full h-24 object-cover" />
+                        <div className="px-2 py-1 text-[10px] text-gray-400 capitalize">{k.replace(/([A-Z])/g, ' $1')}</div>
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -247,6 +274,17 @@ export default function AdminBookings() {
           </div>
         </div>
       )}
+
+      <CreateBookingModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(booking) => {
+          if (!booking?._id) return;
+          setBookings((prev) => [booking, ...prev]);
+          setFilter('all');
+          setSearch('');
+        }}
+      />
     </AdminLayout>
   );
 }

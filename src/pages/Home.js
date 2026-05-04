@@ -102,7 +102,7 @@ export default function Home() {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap gap-6 mt-8">
+            <div className="flex flex-wrap justify-center gap-6 mt-8">
               {[['500+', 'Happy Guests'], ['50+', 'Luxury Rooms'], ['4.9★', 'Average Rating'], ['24/7', 'Guest Support']].map(([v, l]) => (
                 <div key={l}>
                   <div className="font-serif text-2xl text-primary-300">{v}</div>
@@ -114,7 +114,7 @@ export default function Home() {
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+        <div className="absolute bottom-8 left-30 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
           <span className="text-xs text-gray-500">Scroll to explore</span>
           <svg className="w-4 h-4 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

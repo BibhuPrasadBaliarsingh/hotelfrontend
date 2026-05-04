@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API = axios.create({
   baseURL:"https://hotelbackend-rsrl.onrender.com/api",
+  // baseURL:"http://localhost:5000/api/",
   timeout: 10000,
 });
 
@@ -41,6 +42,7 @@ export const addReview = (id, data) => API.post(`/rooms/${id}/reviews`, data);
 
 // ── Bookings ──────────────────────────────────────────────
 export const createBooking = (data) => API.post('/bookings', data);
+export const adminCreateBooking = (data) => API.post('/bookings/admin/create', data);
 export const getMyBookings = () => API.get('/bookings/my');
 export const getAllBookings = () => API.get('/bookings/admin/all');
 export const getDashboardStats = () => API.get('/bookings/admin/stats');

@@ -23,13 +23,13 @@ const TYPE_STYLES = {
 const emptyRoom = {
   name: '', type: 'Single', price: '', description: '',
   capacity: 2, size: 30, floor: 1,
-  images: ['', ''],
+  images: [],
   amenities: [],
   isAvailable: true,
 };
 
 function RoomModal({ room, onClose, onSave }) {
-  const [form, setForm] = useState(room ? { ...room, images: room.images?.length ? room.images : ['', ''] } : { ...emptyRoom });
+  const [form, setForm] = useState(room ? { ...room, images: room.images?.length ? room.images : [] } : { ...emptyRoom });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -39,10 +39,33 @@ function RoomModal({ room, onClose, onSave }) {
     set('amenities', form.amenities.includes(a) ? form.amenities.filter(x => x !== a) : [...form.amenities, a]);
   };
 
-  const setImage = (i, v) => {
+  const removeImage = (index) => {
     const imgs = [...form.images];
-    imgs[i] = v;
+    imgs.splice(index, 1);
     set('images', imgs);
+  };
+
+  const readFilesAsDataUrls = async (files) => {
+    const readers = Array.from(files).map(file => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }));
+    return Promise.all(readers);
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    try {
+      const uploaded = await readFilesAsDataUrls(files);
+      set('images', [...form.images, ...uploaded]);
+    } catch {
+      toast.error('Failed to read uploaded images');
+    } finally {
+      e.target.value = '';
+    }
   };
 
   const validate = () => {
@@ -135,17 +158,25 @@ function RoomModal({ room, onClose, onSave }) {
 
           {/* Images */}
           <div>
-            <label className="text-xs text-gray-400 font-medium mb-1.5 block">Image URLs</label>
-            <div className="space-y-2">
+            <label className="text-xs text-gray-400 font-medium mb-1.5 block">Room Images</label>
+            <div className="flex flex-wrap gap-2 items-center mb-3">
+              <label className="btn-outline px-4 py-2 text-sm cursor-pointer rounded-xl">
+                Upload images
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+              </label>
+              <span className="text-gray-500 text-xs">You can upload multiple images. They are stored directly in MongoDB.</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {form.images.length === 0 && (
+                <div className="col-span-full text-gray-500 text-sm">No images uploaded yet.</div>
+              )}
               {form.images.map((img, i) => (
-                <div key={i} className="flex gap-2">
-                  <input value={img} onChange={e => setImage(i, e.target.value)}
-                    placeholder={`Image ${i + 1} URL (Unsplash, etc.)`} className="input-field text-sm flex-1" />
-                  {img && (
-                    <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
-                      <img src={img} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                    </div>
-                  )}
+                <div key={i} className="relative rounded-xl overflow-hidden border border-white/10 bg-white/5">
+                  <img src={img} alt={`Room ${i + 1}`} className="w-full h-24 object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                  <button type="button" onClick={() => removeImage(i)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white text-xs grid place-items-center hover:bg-black/80">
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -205,6 +236,7 @@ export default function AdminRooms() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [deleting, setDeleting] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
@@ -228,7 +260,6 @@ export default function AdminRooms() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this room? This action cannot be undone.')) return;
     setDeleting(id);
     try {
       await deleteRoom(id);
@@ -236,7 +267,7 @@ export default function AdminRooms() {
       toast.success('Room deleted');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Delete failed');
-    } finally { setDeleting(null); }
+    } finally { setDeleting(null); setDeleteTarget(null); }
   };
 
   const filtered = rooms.filter(r => {
@@ -331,7 +362,7 @@ export default function AdminRooms() {
                           className="text-xs px-3 py-1.5 border border-white/10 text-gray-400 rounded-lg hover:border-primary-500/50 hover:text-primary-400 transition-all">
                           Edit
                         </button>
-                        <button onClick={() => handleDelete(room._id)} disabled={deleting === room._id}
+                        <button onClick={() => setDeleteTarget(room)} disabled={deleting === room._id}
                           className="text-xs px-3 py-1.5 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/5 transition-all disabled:opacity-50">
                           {deleting === room._id ? '...' : 'Delete'}
                         </button>
@@ -350,6 +381,28 @@ export default function AdminRooms() {
         </div>
       )}
 
+      {deleteTarget && (
+        <div className="fixed inset-0 modal-backdrop z-60 flex items-center justify-center p-4">
+          <div className="bg-hotel-card border border-hotel-border rounded-2xl w-full max-w-lg shadow-2xl animate-fade-in overflow-hidden">
+            <div className="p-6 space-y-5">
+              <div>
+                <h3 className="text-white font-semibold text-lg">Confirm Delete</h3>
+                <p className="text-gray-400 text-sm mt-1">Are you sure you want to delete <span className="font-medium text-white">{deleteTarget.name}</span>? This action cannot be undone.</p>
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setDeleteTarget(null)} className="flex-1 btn-outline py-3">
+                  Cancel
+                </button>
+                <button type="button" onClick={() => handleDelete(deleteTarget._id)}
+                  disabled={deleting === deleteTarget._id}
+                  className="flex-1 btn-danger py-3 disabled:opacity-50">
+                  {deleting === deleteTarget._id ? 'Deleting...' : 'Delete Room'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {modal !== null && (
         <RoomModal
           room={modal === 'add' ? null : modal}
