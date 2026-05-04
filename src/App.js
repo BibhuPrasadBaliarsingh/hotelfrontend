@@ -18,6 +18,7 @@ const MyBookings = lazy(() => import('./pages/MyBookings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminRooms = lazy(() => import('./pages/admin/AdminRooms'));
+const AdminRoomAvailability = lazy(() => import('./pages/admin/RoomAvailability'));
 const AdminBookings = lazy(() => import('./pages/admin/AdminBookings'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -70,6 +71,7 @@ function AppRoutes() {
         {/* Admin protected */}
         <Route path="/admin/dashboard" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/rooms" element={<ProtectedRoute adminOnly><AdminRooms /></ProtectedRoute>} />
+        <Route path="/admin/availability" element={<ProtectedRoute adminOnly><AdminRoomAvailability /></ProtectedRoute>} />
         <Route path="/admin/bookings" element={<ProtectedRoute adminOnly><AdminBookings /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
 

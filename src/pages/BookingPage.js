@@ -17,6 +17,7 @@ export default function BookingPage() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     checkIn: '', checkOut: '', adults: 1, children: 0,
+    guestName: '', guestEmail: '', guestPhone: '',
     specialRequests: '', paymentMethod: 'card',
     cardNumber: '', cardName: '', cardExpiry: '', cardCVV: '',
     documentImage: '',
@@ -28,6 +29,16 @@ export default function BookingPage() {
   useEffect(() => {
     getRoom(id).then(res => setRoom(res.data.room)).catch(() => toast.error('Room not found')).finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!user) return;
+    setForm(f => ({
+      ...f,
+      guestName: user.name || f.guestName,
+      guestEmail: user.email || f.guestEmail,
+      guestPhone: user.phone || f.guestPhone,
+    }));
+  }, [user]);
 
   const set = (k, v) => { setForm(f => ({...f, [k]: v})); setErrors(e => ({...e, [k]: ''})); };
 
@@ -47,6 +58,9 @@ export default function BookingPage() {
     if (!form.checkOut) errs.checkOut = 'Select check-out date';
     else if (n < 1) errs.checkOut = 'Check-out must be after check-in';
     if (form.adults < 1) errs.adults = 'At least 1 adult required';
+    if (!form.guestName.trim()) errs.guestName = 'Guest name is required';
+    if (!form.guestEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guestEmail)) errs.guestEmail = 'Valid email is required';
+    if (!form.guestPhone.trim() || form.guestPhone.replace(/\D/g, '').length < 7) errs.guestPhone = 'Valid phone number is required';
     if (!form.documentImage) errs.documentImage = 'Upload Aadhaar or PAN card before booking';
     return errs;
   };
@@ -77,6 +91,7 @@ export default function BookingPage() {
       const res = await createBooking({
         roomId: id, checkIn: form.checkIn, checkOut: form.checkOut,
         guests: { adults: form.adults, children: form.children },
+        guestInfo: { name: form.guestName, email: form.guestEmail, phone: form.guestPhone },
         specialRequests: form.specialRequests, paymentMethod: form.paymentMethod,
         documents: { documentImage: form.documentImage },
       });
@@ -144,6 +159,27 @@ export default function BookingPage() {
                     <select value={form.children} onChange={e => set('children', Number(e.target.value))} className="input-field">
                       {[0,1,2,3].map(n => <option key={n} value={n}>{n} {n === 1 ? 'Child' : 'Children'}</option>)}
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Guest Name *</label>
+                    <input value={form.guestName} onChange={e => set('guestName', e.target.value)}
+                      className={`input-field ${errors.guestName ? 'border-red-500/50' : ''}`} placeholder="Full name" />
+                    {errors.guestName && <p className="text-red-400 text-xs mt-1">{errors.guestName}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Email *</label>
+                    <input value={form.guestEmail} onChange={e => set('guestEmail', e.target.value)}
+                      className={`input-field ${errors.guestEmail ? 'border-red-500/50' : ''}`} placeholder="you@example.com" />
+                    {errors.guestEmail && <p className="text-red-400 text-xs mt-1">{errors.guestEmail}</p>}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Phone *</label>
+                    <input value={form.guestPhone} onChange={e => set('guestPhone', e.target.value)}
+                      className={`input-field ${errors.guestPhone ? 'border-red-500/50' : ''}`} placeholder="Phone number" />
+                    {errors.guestPhone && <p className="text-red-400 text-xs mt-1">{errors.guestPhone}</p>}
                   </div>
                 </div>
 
