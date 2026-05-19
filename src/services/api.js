@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  // baseURL:"https://hotelbackend-rsrl.onrender.com/api",
-  baseURL:"http://localhost:5000/api/",
+  baseURL:"https://hotelbackend-rsrl.onrender.com/api",
+  // baseURL:"http://localhost:5000/api/",
   timeout: 10000,
 });
 
