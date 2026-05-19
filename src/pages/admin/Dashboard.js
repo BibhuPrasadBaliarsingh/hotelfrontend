@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
 import Spinner from '../../components/Spinner';
+import { useAuth } from '../../context/AuthContext';
 import { getDashboardStats, getAllBookings } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatINR } from '../../utils/currency';
@@ -49,9 +50,11 @@ function StatCard({ icon, label, value, sub, trend, color = 'primary' }) {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isStaff = user?.role === 'management' || user?.role === 'reception';
 
   useEffect(() => {
     Promise.all([getDashboardStats(), getAllBookings()])
@@ -66,6 +69,70 @@ export default function AdminDashboard() {
   if (loading) return (
     <AdminLayout title="Dashboard" subtitle="Loading...">
       <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+    </AdminLayout>
+  );
+
+  if (isStaff) return (
+    <AdminLayout title="Staff Dashboard" subtitle="Limited access: create bookings only">
+      <div className="space-y-6">
+        <div className="card p-6 border border-white/10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-white font-semibold text-xl">Your role gives you booking creation access only</h2>
+              <p className="text-gray-400 text-sm mt-2">Create bookings and view recent reservations. Other admin sections are restricted.</p>
+            </div>
+            <Link to="/admin/bookings" className="btn-primary py-3 px-5 text-sm">Create New Booking</Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="stat-card bg-gradient-to-br from-primary-900/30 to-primary-900/5 border-primary-800/30 text-primary-400">
+            <p className="text-xs uppercase tracking-[0.18em] text-gray-500 mb-2">Total bookings</p>
+            <p className="text-3xl font-semibold">{stats?.totalBookings || 0}</p>
+            <p className="text-gray-500 text-xs mt-2">All confirmed and pending reservations.</p>
+          </div>
+          <div className="stat-card bg-gradient-to-br from-green-900/30 to-green-900/5 border-green-800/30 text-green-400">
+            <p className="text-xs uppercase tracking-[0.18em] text-gray-500 mb-2">Upcoming arrivals</p>
+            <p className="text-3xl font-semibold">{stats?.active || 0}</p>
+            <p className="text-gray-500 text-xs mt-2">Bookings scheduled to begin soon.</p>
+          </div>
+        </div>
+
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-white font-semibold">Recent Bookings</h3>
+              <p className="text-gray-500 text-sm">Latest reservations available for review.</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-hotel-border text-gray-500 uppercase tracking-[0.18em] text-xs">
+                  {['Reference', 'Guest', 'Room', 'Check-In', 'Amount', 'Status'].map(h => (
+                    <th key={h} className="px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hotel-border">
+                {recentBookings.map((booking) => (
+                  <tr key={booking._id} className="hover:bg-white/5">
+                    <td className="px-4 py-4 font-mono text-xs text-primary-400">{booking.bookingRef}</td>
+                    <td className="px-4 py-4 text-white">{booking.user?.name || booking.guestInfo?.name}</td>
+                    <td className="px-4 py-4 text-gray-400">{booking.room?.name || 'Room'}</td>
+                    <td className="px-4 py-4 text-gray-400">{new Date(booking.checkIn).toLocaleDateString()}</td>
+                    <td className="px-4 py-4 text-primary-400 font-semibold">{formatINR(booking.totalAmount)}</td>
+                    <td className="px-4 py-4 text-sm text-white capitalize">{booking.status}</td>
+                  </tr>
+                ))}
+                {recentBookings.length === 0 && (
+                  <tr><td colSpan={6} className="text-center py-10 text-gray-500 text-sm">No recent bookings available yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </AdminLayout>
   );
 

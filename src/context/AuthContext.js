@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import { loginUser, registerUser, getMe } from '../services/api';
+import { loginUser, registerUser, getMe, guestLoginUser } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -67,6 +67,17 @@ export function AuthProvider({ children }) {
     return user;
   }, []);
 
+  const guestLogin = useCallback(async (data) => {
+    const res = await guestLoginUser(data);
+    const { token, user } = res.data;
+    localStorage.setItem('hotelToken', token);
+    localStorage.setItem('hotelUser', JSON.stringify(user));
+    dispatch({ type: 'SET_TOKEN', payload: token });
+    dispatch({ type: 'SET_USER', payload: user });
+    toast.success(`Welcome back, ${user.name.split(' ')[0]}! Your guest session is ready.`);
+    return user;
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('hotelToken');
     localStorage.removeItem('hotelUser');
@@ -75,7 +86,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, dispatch }}>
+    <AuthContext.Provider value={{ ...state, login, guestLogin, register, logout, dispatch }}>
       {children}
     </AuthContext.Provider>
   );

@@ -57,6 +57,12 @@ export default function Navbar() {
               </Link>
             ))}
             {isAuthenticated && user?.role !== 'admin' && (
+              <Link to="/booking-cart"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive('/booking-cart') ? 'text-primary-400 bg-primary-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                Cart
+              </Link>
+            )}
+            {isAuthenticated && user?.role !== 'admin' && (
               <Link to="/my-bookings"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive('/my-bookings') ? 'text-primary-400 bg-primary-900/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
                 My Bookings
@@ -132,6 +138,7 @@ export default function Navbar() {
           ))}
           {isAuthenticated ? (
             <>
+              {user?.role !== 'admin' && <Link to="/booking-cart" className="block px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/5">Cart</Link>}
               {user?.role !== 'admin' && <Link to="/my-bookings" className="block px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/5">My Bookings</Link>}
               {user?.role !== 'admin' && <Link to="/profile" className="block px-4 py-3 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/5">Profile</Link>}
               {user?.role === 'admin' && <Link to="/admin/dashboard" className="block px-4 py-3 rounded-xl text-sm text-primary-400 bg-primary-900/20">Admin Panel</Link>}

@@ -16,9 +16,9 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    checkIn: '', checkOut: '', adults: 1, children: 0,
+    checkIn: '', checkOut: '', checkInTime: '14:00', checkOutTime: '11:00', adults: 1, children: 0,
     guestName: '', guestEmail: '', guestPhone: '',
-    specialRequests: '', paymentMethod: 'card',
+    specialRequests: '', paymentMethod: 'card', paymentStatus: 'paid', customAmount: '',
     cardNumber: '', cardName: '', cardExpiry: '', cardCVV: '',
     documentImage: '',
   });
@@ -57,6 +57,8 @@ export default function BookingPage() {
     if (!form.checkIn) errs.checkIn = 'Select check-in date';
     if (!form.checkOut) errs.checkOut = 'Select check-out date';
     else if (n < 1) errs.checkOut = 'Check-out must be after check-in';
+    if (!form.checkInTime) errs.checkInTime = 'Select check-in time';
+    if (!form.checkOutTime) errs.checkOutTime = 'Select check-out time';
     if (form.adults < 1) errs.adults = 'At least 1 adult required';
     if (!form.guestName.trim()) errs.guestName = 'Guest name is required';
     if (!form.guestEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guestEmail)) errs.guestEmail = 'Valid email is required';
@@ -89,10 +91,17 @@ export default function BookingPage() {
     setSubmitting(true);
     try {
       const res = await createBooking({
-        roomId: id, checkIn: form.checkIn, checkOut: form.checkOut,
+        roomId: id,
+        checkIn: form.checkIn,
+        checkOut: form.checkOut,
+        checkInTime: form.checkInTime,
+        checkOutTime: form.checkOutTime,
         guests: { adults: form.adults, children: form.children },
         guestInfo: { name: form.guestName, email: form.guestEmail, phone: form.guestPhone },
-        specialRequests: form.specialRequests, paymentMethod: form.paymentMethod,
+        specialRequests: form.specialRequests,
+        paymentMethod: form.paymentMethod,
+        paymentStatus: form.paymentStatus,
+        customAmount: form.customAmount ? Number(form.customAmount) : 0,
         documents: { documentImage: form.documentImage },
       });
       toast.success('Booking confirmed!');
@@ -147,6 +156,18 @@ export default function BookingPage() {
                     <input type="date" min={form.checkIn || today} value={form.checkOut} onChange={e => set('checkOut', e.target.value)}
                       className={`input-field ${errors.checkOut ? 'border-red-500/50' : ''}`} />
                     {errors.checkOut && <p className="text-red-400 text-xs mt-1">{errors.checkOut}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Check-In Time *</label>
+                    <input type="time" value={form.checkInTime} onChange={e => set('checkInTime', e.target.value)}
+                      className={`input-field ${errors.checkInTime ? 'border-red-500/50' : ''}`} />
+                    {errors.checkInTime && <p className="text-red-400 text-xs mt-1">{errors.checkInTime}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Check-Out Time *</label>
+                    <input type="time" value={form.checkOutTime} onChange={e => set('checkOutTime', e.target.value)}
+                      className={`input-field ${errors.checkOutTime ? 'border-red-500/50' : ''}`} />
+                    {errors.checkOutTime && <p className="text-red-400 text-xs mt-1">{errors.checkOutTime}</p>}
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Adults *</label>
@@ -237,13 +258,28 @@ export default function BookingPage() {
                 </div>
 
                 {/* Payment method selector */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[['card', '💳 Credit Card'], ['paypal', '🅿️ PayPal']].map(([m, label]) => (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[['card', '💳 Credit Card'], ['paypal', '🅿️ PayPal'], ['cash', '💵 Cash']].map(([m, label]) => (
                     <button key={m} type="button" onClick={() => set('paymentMethod', m)}
                       className={`p-3 rounded-xl border text-sm font-medium transition-all ${form.paymentMethod === m ? 'border-primary-500 bg-primary-900/20 text-primary-400' : 'border-white/10 text-gray-400 hover:border-white/20'}`}>
                       {label}
                     </button>
                   ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Payment Status</label>
+                    <select value={form.paymentStatus} onChange={e => set('paymentStatus', e.target.value)} className="input-field text-sm">
+                      {['paid', 'due', 'pending'].map((status) => (
+                        <option key={status} value={status}>{status.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Custom Amount</label>
+                    <input type="number" min="0" value={form.customAmount} onChange={e => set('customAmount', e.target.value)} placeholder="Override total" className="input-field text-sm" />
+                  </div>
                 </div>
 
                 {form.paymentMethod === 'card' && (
@@ -313,8 +349,8 @@ export default function BookingPage() {
               </div>
               {form.checkIn && form.checkOut && n > 0 && (
                 <div className="space-y-2 text-sm pt-3 border-t border-white/5">
-                  <div className="flex justify-between"><span className="text-gray-500">Check-in</span><span className="text-white">{form.checkIn}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Check-out</span><span className="text-white">{form.checkOut}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Check-in</span><span className="text-white">{form.checkIn} {form.checkInTime}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Check-out</span><span className="text-white">{form.checkOut} {form.checkOutTime}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Nights</span><span className="text-white">{n}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Guests</span><span className="text-white">{form.adults + form.children}</span></div>
                   <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-gray-500">Subtotal</span><span className="text-white">{formatINR(subtotal)}</span></div>

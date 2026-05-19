@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import Spinner from '../../components/Spinner';
 import API, { getAllBookings, updateBookingStatus, cancelBooking } from '../../services/api';
@@ -77,15 +78,30 @@ export default function AdminBookings() {
   };
 
   const totalRevenue = bookings.filter(b => b.status !== 'cancelled').reduce((s, b) => s + b.totalAmount, 0);
+  const futureBookingCount = bookings.filter((b) => b.status !== 'cancelled' && new Date(b.checkOut) >= new Date()).length;
 
   return (
     <AdminLayout title="Booking Management" subtitle={`${bookings.length} total bookings · ${formatINR(totalRevenue)} revenue`}>
+      <div className="card p-5 mb-6 border border-primary-500/10 bg-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-white font-semibold text-lg">Monthly revenue export and future booking reports</h2>
+            <p className="text-gray-400 text-sm mt-2">Use Reports for XLSX exports, and Calendar for an at-a-glance future booking schedule.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/admin/management" className="btn-primary py-2 px-4 text-sm">Export Revenue</Link>
+            <Link to="/admin/calendar" className="btn-outline py-2 px-4 text-sm">Future Booking Calendar</Link>
+          </div>
+        </div>
+      </div>
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
         {[
           ['all', 'Total', bookings.length, 'text-white'],
           ['confirmed', 'Confirmed', bookings.filter(b => b.status === 'confirmed').length, 'text-green-400'],
           ['completed', 'Completed', bookings.filter(b => b.status === 'completed').length, 'text-blue-400'],
+          ['future', 'Future', futureBookingCount, 'text-purple-400'],
           ['cancelled', 'Cancelled', bookings.filter(b => b.status === 'cancelled').length, 'text-red-400'],
         ].map(([f, label, count, color]) => (
           <button key={f} onClick={() => setFilter(f)}
@@ -129,7 +145,7 @@ export default function AdminBookings() {
                 {filtered.map(b => (
                   <tr key={b._id} className="hover:bg-white/3 transition-colors">
                     <td className="px-4 py-4">
-                      <button onClick={() => setSelectedBooking(b)} className="font-mono text-xs text-primary-400 hover:text-primary-300 transition-colors">
+                      <button onClick={() => window.dispatchEvent(new CustomEvent('openBookingPanel', { detail: b }))} className="font-mono text-xs text-primary-400 hover:text-primary-300 transition-colors">
                         {b.bookingRef}
                       </button>
                     </td>
@@ -169,7 +185,7 @@ export default function AdminBookings() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-1.5">
-                        <button onClick={() => setSelectedBooking(b)}
+                        <button onClick={() => window.dispatchEvent(new CustomEvent('openBookingPanel', { detail: b }))}
                           className="text-xs px-2.5 py-1.5 border border-white/10 text-gray-400 rounded-lg hover:border-primary-500/50 hover:text-primary-400 transition-all">
                           View
                         </button>
@@ -199,81 +215,7 @@ export default function AdminBookings() {
       )}
 
       {/* Booking Detail Modal */}
-      {selectedBooking && (
-        <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
-          <div className="bg-hotel-card border border-hotel-border rounded-2xl w-full max-w-md shadow-2xl animate-fade-in">
-            <div className="flex justify-between items-center p-5 border-b border-hotel-border">
-              <div>
-                <h3 className="text-white font-semibold">Booking Details</h3>
-                <p className="font-mono text-primary-400 text-sm">{selectedBooking.bookingRef}</p>
-              </div>
-              <button onClick={() => setSelectedBooking(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10">✕</button>
-            </div>
-            <div className="p-5 space-y-3 text-sm">
-              {[
-                ['Guest', selectedBooking.user?.name],
-                ['Email', selectedBooking.user?.email],
-                ['Phone', selectedBooking.guestInfo?.phone || selectedBooking.user?.phone || '—'],
-                ['Room', selectedBooking.room?.name],
-                ['Room Type', selectedBooking.room?.type],
-                ['Check-In', new Date(selectedBooking.checkIn).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
-                ['Check-Out', new Date(selectedBooking.checkOut).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
-                ['Nights', selectedBooking.totalNights],
-                ['Guests', `${selectedBooking.guests?.adults} adults, ${selectedBooking.guests?.children || 0} children`],
-                ['Price/Night', formatINR(selectedBooking.pricePerNight)],
-                ['Total Amount', formatINR(selectedBooking.totalAmount)],
-                ['Payment', selectedBooking.paymentStatus],
-                ['Booked On', new Date(selectedBooking.createdAt).toLocaleDateString()],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between py-1.5 border-b border-white/5 last:border-0">
-                  <span className="text-gray-500">{k}</span>
-                  <span className="text-white text-right max-w-[200px]">{v}</span>
-                </div>
-              ))}
-              {selectedBooking.specialRequests && (
-                <div className="bg-white/3 rounded-xl p-3 mt-2">
-                  <p className="text-gray-500 text-xs mb-1">Special Requests:</p>
-                  <p className="text-gray-300 text-xs">{selectedBooking.specialRequests}</p>
-                </div>
-              )}
-              {selectedBooking.documents && Object.values(selectedBooking.documents).some(Boolean) && (
-                <div className="bg-white/3 rounded-xl p-3 mt-2">
-                  <p className="text-gray-500 text-xs mb-3">Documents:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(selectedBooking.documents).filter(([, v]) => Boolean(v)).map(([k, v]) => (
-                      <a key={k} href={assetUrl(v)} target="_blank" rel="noreferrer"
-                        className="border border-white/10 rounded-xl overflow-hidden hover:border-primary-800/40 transition-colors">
-                        <img src={assetUrl(v)} alt={k} className="w-full h-24 object-cover" />
-                        <div className="px-2 py-1 text-[10px] text-gray-400 capitalize">{k.replace(/([A-Z])/g, ' $1')}</div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="p-5 border-t border-hotel-border">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-gray-500 text-sm">Current Status</span>
-                <span className={`badge border ${STATUS_STYLES[selectedBooking.status]}`}>
-                  {selectedBooking.status?.charAt(0).toUpperCase() + selectedBooking.status?.slice(1)}
-                </span>
-              </div>
-              {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'completed' && (
-                <div className="flex gap-2">
-                  <button onClick={() => { handleStatusChange(selectedBooking._id, 'completed'); setSelectedBooking(null); }}
-                    className="flex-1 text-sm py-2.5 border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/5 transition-colors">
-                    Mark Completed
-                  </button>
-                  <button onClick={() => { handleStatusChange(selectedBooking._id, 'cancelled'); setSelectedBooking(null); }}
-                    className="flex-1 text-sm py-2.5 border border-red-500/30 text-red-400 rounded-xl hover:bg-red-500/5 transition-colors">
-                    Cancel Booking
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Booking detail moved to right-side panel via openBookingPanel event */}
 
       <CreateBookingModal
         open={createOpen}

@@ -2,13 +2,29 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const NAV = [
-  { to: '/admin/dashboard', icon: '⬡', label: 'Dashboard' },
-  { to: '/admin/rooms',     icon: '🛏',  label: 'Rooms' },
-  { to: '/admin/availability', icon: '📅', label: 'Availability' },
-  { to: '/admin/bookings',  icon: '📋', label: 'Bookings' },
-  { to: '/admin/users',     icon: '👥',  label: 'Users' },
-];
+const getNav = (role) => {
+  if (role === 'admin') {
+    return [
+      { to: '/admin/dashboard', icon: '⬡', label: 'Dashboard' },
+      { to: '/admin/bookings', icon: '📋', label: 'Booking History' },
+      { to: '/admin/calendar', icon: '📆', label: 'Calendar' },
+      { to: '/admin/documents', icon: '📄', label: 'Documents' },
+      { to: '/admin/management', icon: '📈', label: 'Reports' },
+      { to: '/admin/rooms', icon: '🛏', label: 'Rooms' },
+      { to: '/admin/availability', icon: '📅', label: 'Availability' },
+      { to: '/admin/users', icon: '👥', label: 'Users' },
+    ];
+  }
+
+  if (role === 'management' || role === 'reception') {
+    return [
+      { to: '/admin/dashboard', icon: '⬡', label: 'Dashboard' },
+      { to: '/admin/bookings', icon: '📋', label: 'Create Booking' },
+    ];
+  }
+
+  return [];
+};
 
 export default function AdminLayout({ children, title, subtitle }) {
   const { user, logout } = useAuth();
@@ -30,13 +46,13 @@ export default function AdminLayout({ children, title, subtitle }) {
             <div className="font-serif text-white text-lg leading-none">LuxeStay</div>
             <div className="text-primary-400 text-xs">Admin Panel</div>
           </div>
-        </Link>
+        </Link>  
       </div>
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-1">
-        {NAV.map(n => {
-          const active = location.pathname === n.to;
+        {getNav(user?.role).map(n => {
+          const active = location.pathname === n.to || location.pathname.startsWith(`${n.to}/`);
           return (
             <Link key={n.to} to={n.to}
               onClick={() => setSidebarOpen(false)}
@@ -57,7 +73,9 @@ export default function AdminLayout({ children, title, subtitle }) {
           </div>
           <div className="min-w-0">
             <p className="text-white text-sm font-medium truncate">{user?.name}</p>
-            <p className="text-gray-600 text-xs">Administrator</p>
+            <p className="text-gray-600 text-xs">
+              {user?.role === 'admin' ? 'Administrator' : user?.role === 'management' ? 'Management' : user?.role === 'reception' ? 'Reception' : 'Team Member'}
+            </p>
           </div>
         </div>
         <div className="flex gap-2">

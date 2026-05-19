@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL:"https://hotelbackend-rsrl.onrender.com/api",
-  // baseURL:"http://localhost:5000/api/",
+  // baseURL:"https://hotelbackend-rsrl.onrender.com/api",
+  baseURL:"http://localhost:5000/api/",
   timeout: 10000,
 });
 
@@ -29,6 +29,8 @@ API.interceptors.response.use(
 // ── Auth ──────────────────────────────────────────────────
 export const registerUser = (data) => API.post('/auth/register', data);
 export const loginUser = (data) => API.post('/auth/login', data);
+export const guestLoginUser = (data) => API.post('/auth/guest-login', data);
+export const getGuestSession = () => API.get('/auth/guest-session');
 export const getMe = () => API.get('/auth/me');
 export const updateProfile = (data) => API.put('/auth/profile', data);
 
@@ -42,9 +44,13 @@ export const addReview = (id, data) => API.post(`/rooms/${id}/reviews`, data);
 
 // ── Bookings ──────────────────────────────────────────────
 export const createBooking = (data) => API.post('/bookings', data);
+export const createBulkBooking = (data) => API.post('/bookings/bulk', data);
 export const adminCreateBooking = (data) => API.post('/bookings/admin/create', data);
 export const getMyBookings = () => API.get('/bookings/my');
 export const getAllBookings = () => API.get('/bookings/admin/all');
+export const searchBookings = (query) => API.get('/bookings/admin/search', { params: { q: query } });
+export const getBookingDocuments = (query) => API.get('/bookings/admin/documents', { params: { q: query } });
+export const exportRevenueReport = (params) => API.get('/bookings/admin/export', { params, responseType: 'blob' });
 export const getDashboardStats = () => API.get('/bookings/admin/stats');
 export const cancelBooking = (id) => API.put(`/bookings/${id}/cancel`);
 export const updateBookingStatus = (id, status) => API.put(`/bookings/${id}/status`, { status });
