@@ -16,7 +16,7 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    checkIn: '', checkOut: '', checkInTime: '14:00', checkOutTime: '11:00', adults: 1, children: 0,
+    checkIn: '', checkOut: '', checkInTime: '14:00', checkOutTime: '11:00', adults: 1, children: 0, quantity: 1,
     guestName: '', guestEmail: '', guestPhone: '',
     specialRequests: '', paymentMethod: 'card', paymentStatus: 'paid', customAmount: '',
     cardNumber: '', cardName: '', cardExpiry: '', cardCVV: '',
@@ -48,9 +48,10 @@ export default function BookingPage() {
     return d > 0 ? d : 0;
   };
   const n = nights();
-  const subtotal = room ? room.price * n : 0;
+  const subtotal = room ? room.price * n * form.quantity : 0;
   const tax = subtotal * 0.12;
   const total = subtotal + tax;
+  const effectiveTotal = user?.role === 'admin' && form.customAmount ? Number(form.customAmount) : total;
 
   const validateStep1 = () => {
     const errs = {};
@@ -60,6 +61,7 @@ export default function BookingPage() {
     if (!form.checkInTime) errs.checkInTime = 'Select check-in time';
     if (!form.checkOutTime) errs.checkOutTime = 'Select check-out time';
     if (form.adults < 1) errs.adults = 'At least 1 adult required';
+    if (form.quantity < 1) errs.quantity = 'Select at least one room';
     if (!form.guestName.trim()) errs.guestName = 'Guest name is required';
     if (!form.guestEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guestEmail)) errs.guestEmail = 'Valid email is required';
     if (!form.guestPhone.trim() || form.guestPhone.replace(/\D/g, '').length < 7) errs.guestPhone = 'Valid phone number is required';
@@ -90,18 +92,20 @@ export default function BookingPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSubmitting(true);
     try {
+      const customAmountValue = user?.role === 'admin' && form.customAmount ? Number(form.customAmount) : 0;
       const res = await createBooking({
         roomId: id,
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         checkInTime: form.checkInTime,
         checkOutTime: form.checkOutTime,
+        quantity: form.quantity,
         guests: { adults: form.adults, children: form.children },
         guestInfo: { name: form.guestName, email: form.guestEmail, phone: form.guestPhone },
         specialRequests: form.specialRequests,
         paymentMethod: form.paymentMethod,
         paymentStatus: form.paymentStatus,
-        customAmount: form.customAmount ? Number(form.customAmount) : 0,
+        customAmount: customAmountValue,
         documents: { documentImage: form.documentImage },
       });
       toast.success('Booking confirmed!');
@@ -181,6 +185,11 @@ export default function BookingPage() {
                       {[0,1,2,3].map(n => <option key={n} value={n}>{n} {n === 1 ? 'Child' : 'Children'}</option>)}
                     </select>
                   </div>
+                  <div>
+                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Rooms</label>
+                    <input type="number" min="1" max="10" value={form.quantity} onChange={e => set('quantity', Math.max(1, Number(e.target.value) || 1))} className={`input-field ${errors.quantity ? 'border-red-500/50' : ''}`} />
+                    {errors.quantity && <p className="text-red-400 text-xs mt-1">{errors.quantity}</p>}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -206,17 +215,33 @@ export default function BookingPage() {
 
                 {/* Dynamic price preview */}
                 {n > 0 && (
-                  <div className="bg-primary-900/15 border border-primary-800/30 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-primary-400 text-sm font-medium mb-3">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                      Price Breakdown
+                  <>
+                    <div className="bg-primary-900/15 border border-primary-800/30 rounded-xl p-4">
+                      <div className="flex items-center gap-2 text-primary-400 text-sm font-medium mb-3">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        Price Breakdown
+                      </div>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex justify-between"><span className="text-gray-400">{formatINR(room.price)} × {n} night{n > 1 ? 's' : ''} × {form.quantity} room{form.quantity > 1 ? 's' : ''}</span><span className="text-white">{formatINR(subtotal)}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-400">Taxes & fees (12%)</span><span className="text-white">{formatINR(tax)}</span></div>
+                        <div className="flex justify-between pt-2 border-t border-white/10 font-bold"><span className="text-white">Total</span><span className="text-primary-400 text-base">{formatINR(effectiveTotal)}</span></div>
+                      </div>
                     </div>
-                    <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between"><span className="text-gray-400">{formatINR(room.price)} × {n} night{n > 1 ? 's' : ''}</span><span className="text-white">{formatINR(subtotal)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-400">Taxes & fees (12%)</span><span className="text-white">{formatINR(tax)}</span></div>
-                      <div className="flex justify-between pt-2 border-t border-white/10 font-bold"><span className="text-white">Total</span><span className="text-primary-400 text-base">{formatINR(total)}</span></div>
-                    </div>
-                  </div>
+                    {user?.role === 'admin' && (
+                      <div className="mt-4 p-4 border border-primary-800/30 rounded-xl bg-white/5">
+                        <label className="text-xs text-gray-400 font-medium mb-2 block">Admin estimate total</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={form.customAmount}
+                          onChange={e => set('customAmount', e.target.value)}
+                          placeholder="Enter override total"
+                          className="input-field w-full text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">Only admins can override the estimated total for this booking.</p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div>
@@ -276,10 +301,6 @@ export default function BookingPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-400 font-medium mb-1.5 block">Custom Amount</label>
-                    <input type="number" min="0" value={form.customAmount} onChange={e => set('customAmount', e.target.value)} placeholder="Override total" className="input-field text-sm" />
-                  </div>
                 </div>
 
                 {form.paymentMethod === 'card' && (
@@ -331,7 +352,7 @@ export default function BookingPage() {
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Processing Payment...
                     </span>
-                  ) : `Confirm & Pay ${formatINR(total)}`}
+                  ) : `Confirm & Pay ${formatINR(effectiveTotal)}`}
                 </button>
               </form>
             )}
@@ -355,7 +376,7 @@ export default function BookingPage() {
                   <div className="flex justify-between"><span className="text-gray-500">Guests</span><span className="text-white">{form.adults + form.children}</span></div>
                   <div className="flex justify-between pt-2 border-t border-white/5"><span className="text-gray-500">Subtotal</span><span className="text-white">{formatINR(subtotal)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">Tax (12%)</span><span className="text-white">{formatINR(tax)}</span></div>
-                  <div className="flex justify-between pt-2 border-t border-white/5 font-bold text-base"><span className="text-white">Total</span><span className="text-primary-400">{formatINR(total)}</span></div>
+                  <div className="flex justify-between pt-2 border-t border-white/5 font-bold text-base"><span className="text-white">Total</span><span className="text-primary-400">{formatINR(effectiveTotal)}</span></div>
                 </div>
               )}
               {(n < 1 || !form.checkIn) && (

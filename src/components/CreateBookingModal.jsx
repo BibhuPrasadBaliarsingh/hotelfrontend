@@ -12,13 +12,14 @@ export default function CreateBookingModal({ open, onClose, onCreated }) {
   const [rooms, setRooms] = useState([]);
 
   const [form, setForm] = useState({
-    roomId: '',
+    roomIds: [],
     checkIn: '',
     checkOut: '',
     adults: 1,
     children: 0,
     specialRequests: '',
     paymentMethod: 'cash',
+    customAmount: '',
     guestName: '',
     guestEmail: '',
     guestPhone: '',
@@ -29,16 +30,30 @@ export default function CreateBookingModal({ open, onClose, onCreated }) {
   useEffect(() => {
     if (!open) return;
     setRoomsLoading(true);
-    getRooms()
+    const params = { available: 'true' };
+    if (form.checkIn && form.checkOut) {
+      params.checkIn = form.checkIn;
+      params.checkOut = form.checkOut;
+    }
+    getRooms(params)
       .then((res) => setRooms(res.data.rooms || []))
       .catch(() => toast.error('Failed to load rooms'))
       .finally(() => setRoomsLoading(false));
-  }, [open]);
+  }, [open, form.checkIn, form.checkOut]);
 
-  const selectedRoom = useMemo(
-    () => rooms.find((r) => r._id === form.roomId),
-    [rooms, form.roomId]
+  const selectedRooms = useMemo(
+    () => rooms.filter((r) => form.roomIds.includes(r._id)),
+    [rooms, form.roomIds]
   );
+
+  useEffect(() => {
+    if (!rooms.length || !form.roomIds.length) return;
+    const availableIds = new Set(rooms.map((r) => r._id));
+    const filteredRoomIds = form.roomIds.filter((id) => availableIds.has(id));
+    if (filteredRoomIds.length !== form.roomIds.length) {
+      setForm((prev) => ({ ...prev, roomIds: filteredRoomIds }));
+    }
+  }, [rooms, form.roomIds]);
 
   const setField = (key, value) => setForm((p) => ({ ...p, [key]: value }));
   const setDoc = (value) => setForm((p) => ({ ...p, documents: { ...p.documents, documentImage: value } }));
@@ -52,21 +67,24 @@ export default function CreateBookingModal({ open, onClose, onCreated }) {
   }, [form.checkIn, form.checkOut]);
 
   const totalAmount = useMemo(() => {
-    if (!selectedRoom || !totalNights) return 0;
-    return totalNights * (selectedRoom.price || 0);
-  }, [selectedRoom, totalNights]);
+    if (!selectedRooms.length || !totalNights) return 0;
+    return totalNights * selectedRooms.reduce((sum, room) => sum + (room.price || 0), 0);
+  }, [selectedRooms, totalNights]);
+
+  const effectiveTotal = form.customAmount ? Number(form.customAmount) : totalAmount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const payload = {
-        roomId: form.roomId,
+        roomIds: form.roomIds,
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         guests: { adults: Number(form.adults) || 1, children: Number(form.children) || 0 },
         specialRequests: form.specialRequests,
         paymentMethod: form.paymentMethod,
+        customAmount: form.customAmount ? Number(form.customAmount) : 0,
         guestName: form.guestName,
         guestEmail: form.guestEmail,
         guestPhone: form.guestPhone,
@@ -75,7 +93,8 @@ export default function CreateBookingModal({ open, onClose, onCreated }) {
       };
       const res = await adminCreateBooking(payload);
       toast.success(res.data?.message || 'Booking created');
-      onCreated?.(res.data?.booking);
+      const created = res.data?.bookings || (res.data?.booking ? [res.data.booking] : []);
+      onCreated?.(created);
       onClose?.();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create booking');
@@ -123,16 +142,30 @@ export default function CreateBookingModal({ open, onClose, onCreated }) {
           {/* Booking */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
-              <label className="text-gray-500 text-xs">Room *</label>
+              <label className="text-gray-500 text-xs">Rooms *</label>
               {roomsLoading ? (
                 <div className="flex items-center gap-2 text-gray-500 text-sm"><Spinner /> Loading rooms...</div>
+              ) : rooms.length === 0 ? (
+                <div className="text-gray-400 text-sm">No available rooms for the selected dates. Update check-in/check-out to see available rooms.</div>
               ) : (
-                <select className={INPUT} value={form.roomId} onChange={(e) => setField('roomId', e.target.value)} required>
-                  <option value="">Select room</option>
+                <div className="grid gap-2 max-h-52 overflow-y-auto rounded-xl border border-white/10 p-3 bg-white/5">
                   {rooms.map((r) => (
-                    <option key={r._id} value={r._id}>{r.name} · {r.type} · ₹{r.price}/night</option>
+                    <label key={r._id} className="flex items-center gap-3 text-sm text-gray-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.roomIds.includes(r._id)}
+                        onChange={(e) => {
+                          const selected = new Set(form.roomIds);
+                          if (e.target.checked) selected.add(r._id);
+                          else selected.delete(r._id);
+                          setField('roomIds', Array.from(selected));
+                        }}
+                        className="form-checkbox h-4 w-4 text-primary-500 rounded border-gray-600 bg-black"
+                      />
+                      <span>{r.name} · {r.type} · ₹{r.price}/night</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               )}
             </div>
             <div>
@@ -157,14 +190,26 @@ export default function CreateBookingModal({ open, onClose, onCreated }) {
                 {['cash', 'card', 'upi'].map((m) => <option key={m} value={m}>{m.toUpperCase()}</option>)}
               </select>
             </div>
+            <div>
+              <label className="text-gray-500 text-xs">Admin override total</label>
+              <input
+                type="number"
+                min="0"
+                className={INPUT}
+                value={form.customAmount}
+                onChange={(e) => setField('customAmount', e.target.value)}
+                placeholder="Enter custom total"
+              />
+              <p className="text-gray-400 text-[11px] mt-1">Only admins can override the estimate total for relatives or special guests.</p>
+            </div>
             <div className="flex items-end justify-between bg-white/3 rounded-xl px-4 py-3 border border-white/5">
               <div>
                 <div className="text-gray-500 text-xs">Estimated Total</div>
-                <div className="text-white font-semibold text-lg">₹{totalAmount}</div>
+                <div className="text-white font-semibold text-lg">₹{effectiveTotal}</div>
               </div>
               <div className="text-gray-500 text-xs text-right">
                 {totalNights} night{totalNights !== 1 ? 's' : ''}<br />
-                ₹{selectedRoom?.price || 0}/night
+                {selectedRooms.length} room{selectedRooms.length !== 1 ? 's' : ''}
               </div>
             </div>
             <div className="sm:col-span-2">

@@ -11,6 +11,14 @@ const assetUrl = (path) => {
   return `${base}${String(path).startsWith('/') ? '' : '/'}${path}`;
 };
 
+const formatSafeDate = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
+};
+
+const getGuestLabel = (booking) => booking.guestInfo?.name || booking.user?.name || 'Guest';
+const getGuestContact = (booking) => booking.guestInfo?.email || booking.user?.email || 'No email';
+
 export default function AdminDocumentsPanel({ onClose, booking }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,10 +51,11 @@ export default function AdminDocumentsPanel({ onClose, booking }) {
             <div className="card p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-white font-semibold">{booking.guestInfo?.name || booking.user?.name || 'Guest'}</p>
+                  <p className="text-white font-semibold">{getGuestLabel(booking)}</p>
                   <p className="text-gray-400 text-xs">{booking.room?.name || booking.referId || booking.bookingRef}</p>
-                  <p className="text-gray-400 text-xs mt-1">{new Date(booking.checkIn).toLocaleDateString()} → {new Date(booking.checkOut).toLocaleDateString()}</p>
+                  <p className="text-gray-400 text-xs mt-1">{formatSafeDate(booking.checkIn)} → {formatSafeDate(booking.checkOut)}</p>
                   <p className="text-gray-400 text-xs mt-1">Amount: {booking.totalAmount ? booking.totalAmount : '—'}</p>
+                  <p className="text-gray-400 text-xs mt-1">{getGuestContact(booking)} · {booking.guestInfo?.phone || booking.user?.phone || 'No phone'}</p>
                 </div>
                 <div className="text-right text-xs text-gray-400">{new Date(booking.createdAt).toLocaleDateString()}</div>
               </div>

@@ -19,8 +19,9 @@ export default function BookingCart() {
 
   const cartTotal = useMemo(() => {
     const base = total;
-    return customAmount ? Number(customAmount) : base;
-  }, [customAmount, total]);
+    if (user?.role === 'admin') return customAmount ? Number(customAmount) : base;
+    return base;
+  }, [customAmount, total, user]);
 
   const handleQuantity = (roomId, delta) => {
     const item = items.find((entry) => entry.room._id === roomId);
@@ -34,6 +35,7 @@ export default function BookingCart() {
     if (!items.length) return toast.error('Add at least one room to the cart');
     setLoading(true);
     try {
+      const overallCustom = user?.role === 'admin' ? (customAmount || 0) : 0;
       const payload = {
         items: items.map((item) => ({
           roomId: item.room._id,
@@ -42,7 +44,7 @@ export default function BookingCart() {
           checkOut: item.checkOut || new Date(Date.now() + 86400000).toISOString().slice(0, 10),
           adults: item.adults,
           children: item.children,
-          customAmount: item.customAmount || customAmount || 0,
+          customAmount: user?.role === 'admin' ? (item.customAmount || overallCustom || 0) : 0,
           paymentMethod,
           paymentStatus,
           checkInTime: item.checkInTime || '14:00',
@@ -51,7 +53,7 @@ export default function BookingCart() {
         })),
         paymentMethod,
         paymentStatus,
-        customAmount: customAmount || 0,
+        customAmount: overallCustom,
       };
       const res = await createBulkBooking(payload);
       toast.success(res.data.message || 'Booking confirmed');
@@ -137,12 +139,14 @@ export default function BookingCart() {
               <div className="space-y-3 text-sm text-gray-400">
                 <div className="flex justify-between"><span>Subtotal</span><span>{formatINR(subtotal)}</span></div>
                 <div className="flex justify-between"><span>GST 12%</span><span>{formatINR(gst)}</span></div>
-                <div className="flex justify-between font-semibold text-white border-t border-white/10 pt-3"><span>Total</span><span>{formatINR(total)}</span></div>
+                <div className="flex justify-between font-semibold text-white border-t border-white/10 pt-3"><span>Total</span><span>{formatINR(cartTotal)}</span></div>
               </div>
-              <div>
-                <label className="text-xs text-gray-400 uppercase tracking-[0.18em] mb-2 block">Custom amount</label>
-                <input type="number" min="0" value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} placeholder="Override total" className="input-field text-sm" />
-              </div>
+              {user?.role === 'admin' && (
+                <div>
+                  <label className="text-xs text-gray-400 uppercase tracking-[0.18em] mb-2 block">Custom amount</label>
+                  <input type="number" min="0" value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} placeholder="Override total" className="input-field text-sm" />
+                </div>
+              )}
             </div>
 
             <div className="card p-6 space-y-4">
